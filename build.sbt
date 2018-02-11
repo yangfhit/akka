@@ -52,6 +52,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   discovery,
   distributedData,
   docs,
+  jackson,
   multiNodeTestkit,
   osgi,
   persistence,
@@ -234,6 +235,14 @@ lazy val docs = akkaModule("akka-docs")
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
   .disablePlugins(ScalafixPlugin)
+
+lazy val jackson = akkaModule("akka-jackson")
+  .dependsOn(actor, actorTests % "test->test", testkit % "test->test")
+  .settings(Dependencies.jackson)
+  .settings(AutomaticModuleName.settings("akka.jackson"))
+  .settings(OSGi.jackson)
+  .settings(javacOptions += "-parameters")
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
