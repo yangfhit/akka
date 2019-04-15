@@ -85,7 +85,7 @@ public class TcpTest extends StreamTest {
                 Tcp.get(system)
                     .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
             .runFold(
-                ByteString.empty(),
+                ByteString.emptyString(),
                 new Function2<ByteString, ByteString, ByteString>() {
                   public ByteString apply(ByteString acc, ByteString elem) {
                     return acc.concat(elem);
