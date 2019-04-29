@@ -156,7 +156,7 @@ public class BidiFlowDocTest extends AbstractJavaTest {
       return new GraphStageLogic(shape) {
 
         // this holds the received but not yet parsed bytes
-        private ByteString stash = ByteString.empty();
+        private ByteString stash = ByteString.emptyString();
         // this holds the current message length or -1 if at a boundary
         private int needed = -1;
 

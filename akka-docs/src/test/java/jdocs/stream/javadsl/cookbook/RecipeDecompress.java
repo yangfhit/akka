@@ -51,7 +51,7 @@ public class RecipeDecompress extends RecipeTest {
 
     ByteString decompressedData =
         decompressedStream
-            .runFold(ByteString.empty(), ByteString::concat, mat)
+            .runFold(ByteString.emptyString(), ByteString::concat, mat)
             .toCompletableFuture()
             .get(1, TimeUnit.SECONDS);
     String decompressedString = decompressedData.utf8String();

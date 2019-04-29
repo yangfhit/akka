@@ -79,7 +79,7 @@ public class UdpConnectedDocTest {
       builder.matchEquals(
           "send",
           x -> {
-            ByteString data = ByteString.empty();
+            ByteString data = ByteString.emptyString();
             // #send
             connectionActor.tell(UdpConnectedMessage.send(data), getSelf());
             // #send
