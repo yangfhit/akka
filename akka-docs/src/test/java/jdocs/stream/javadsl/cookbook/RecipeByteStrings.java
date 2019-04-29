@@ -78,7 +78,7 @@ public class RecipeByteStrings extends RecipeTest {
         @Override
         public GraphStageLogic createLogic(Attributes inheritedAttributes) {
           return new GraphStageLogic(shape) {
-            private ByteString buffer = ByteString.empty();
+            private ByteString buffer = ByteString.emptyString();
 
             {
               setHandler(
@@ -149,7 +149,7 @@ public class RecipeByteStrings extends RecipeTest {
           assertTrue(chunk.size() <= 2);
         }
 
-        ByteString sum = ByteString.empty();
+        ByteString sum = ByteString.emptyString();
         for (ByteString chunk : chunks) {
           sum = sum.concat(chunk);
         }
@@ -244,7 +244,7 @@ public class RecipeByteStrings extends RecipeTest {
                 .runWith(Sink.seq(), mat)
                 .toCompletableFuture()
                 .get(3, TimeUnit.SECONDS);
-        ByteString acc = ByteString.empty();
+        ByteString acc = ByteString.emptyString();
         for (ByteString b : got) {
           acc = acc.concat(b);
         }
