@@ -6,6 +6,7 @@ package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.actor.typed.ActorRef;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
@@ -117,23 +118,29 @@ public class AccountExampleTest extends JUnitSuite {
         ref.ask(replyTo -> new CreateAccount(replyTo), timeout);
     assertEquals(Confirmed.INSTANCE, createResult.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
-    // FIXME the following doesn't compile, we might need a `responseClass: Class[U]` parameter in ask?
-    // above works because then it is inferred by the lhs type
+    // above works because then the response type is inferred by the lhs type
+    // below requires (ActorRef<OperationResult> replyTo)
 
     assertEquals(
         Confirmed.INSTANCE,
-        ref.ask(replyTo -> new Deposit(BigDecimal.valueOf(100), replyTo), timeout)
+        ref.ask(
+                (ActorRef<OperationResult> replyTo) ->
+                    new Deposit(BigDecimal.valueOf(100), replyTo),
+                timeout)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS));
 
     assertEquals(
         Confirmed.INSTANCE,
-        ref.ask(replyTo -> new Withdraw(BigDecimal.valueOf(10), replyTo), timeout)
+        ref.ask(
+                (ActorRef<OperationResult> replyTo) ->
+                    new Withdraw(BigDecimal.valueOf(10), replyTo),
+                timeout)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS));
 
     BigDecimal balance =
-        ref.ask(replyTo -> new GetBalance(replyTo), timeout)
+        ref.ask((ActorRef<CurrentBalance> replyTo) -> new GetBalance(replyTo), timeout)
             .thenApply(currentBalance -> currentBalance.balance)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);

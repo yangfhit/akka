@@ -433,8 +433,10 @@ object EntityTypeKey {
    *
    * Note that if you are inside of an actor you should prefer [[akka.actor.typed.javadsl.ActorContext.ask]]
    * as that provides better safety.
+   *
+   * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Timeout): CompletionStage[U]
+  def ask[Res](message: JFunction[ActorRef[Res], M], timeout: Timeout): CompletionStage[Res]
 
   /**
    * INTERNAL API

@@ -96,7 +96,8 @@ class AccountExampleSpec extends ScalaTestWithActorTestKit(AccountExampleSpec.co
       createResult.futureValue should ===(Confirmed)
       implicit val ec: ExecutionContext = testKit.system.executionContext
 
-      // errors are shown in IntelliJ Scala plugin 2019.1.6, but compiles with Scala 2.12.8
+      // Errors are shown in IntelliJ Scala plugin 2019.1.6, but compiles with Scala 2.12.8.
+      // Ok in IntelliJ if using ref.ask[OperationResult].
       ref.ask(Deposit(100, _)).futureValue should ===(Confirmed)
       ref.ask(Withdraw(10, _)).futureValue should ===(Confirmed)
       ref.ask(GetBalance(_)).map(_.balance).futureValue should ===(90)
