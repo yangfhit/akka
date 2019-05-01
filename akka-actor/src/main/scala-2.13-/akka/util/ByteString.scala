@@ -138,6 +138,10 @@ object ByteString {
 
   val empty: ByteString = CompactByteString(Array.empty[Byte])
 
+  // workaround for https://github.com/scala/bug/issues/11509
+  /** Java API */
+  val emptyString: ByteString = CompactByteString(Array.empty[Byte])
+
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
   /** Java API */
