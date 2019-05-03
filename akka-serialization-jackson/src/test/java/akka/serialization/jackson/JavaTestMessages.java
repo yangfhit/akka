@@ -5,6 +5,8 @@
 package akka.serialization.jackson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -251,6 +253,110 @@ public interface JavaTestMessages {
       int result = field1V2 != null ? field1V2.hashCode() : 0;
       result = 31 * result + field2;
       return result;
+    }
+  }
+
+  public class Zoo {
+    public final Animal first;
+
+    public Zoo(@JsonProperty("first") Animal first) {
+      this.first = first;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Zoo zoo = (Zoo) o;
+
+      return first != null ? first.equals(zoo.first) : zoo.first == null;
+    }
+
+    @Override
+    public int hashCode() {
+      return first != null ? first.hashCode() : 0;
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = Lion.class, name = "lion"),
+    @JsonSubTypes.Type(value = Elephant.class, name = "elephant")
+  })
+  interface Animal {}
+
+  public final class Lion implements Animal {
+    public final String name;
+
+    public Lion(@JsonProperty("name") String name) {
+      this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Lion lion = (Lion) o;
+
+      return name != null ? name.equals(lion.name) : lion.name == null;
+    }
+
+    @Override
+    public int hashCode() {
+      return name != null ? name.hashCode() : 0;
+    }
+  }
+
+  public final class Elephant implements Animal {
+    public final String name;
+    public final int age;
+
+    public Elephant(String name, int age) {
+      this.name = name;
+      this.age = age;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Elephant elephant = (Elephant) o;
+
+      if (age != elephant.age) return false;
+      return name != null ? name.equals(elephant.name) : elephant.name == null;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name != null ? name.hashCode() : 0;
+      result = 31 * result + age;
+      return result;
+    }
+  }
+  // not defined in JsonSubTypes
+  final class Cockroach implements Animal {
+    public final String name;
+
+    public Cockroach(@JsonProperty("name") String name) {
+      this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Cockroach cockroach = (Cockroach) o;
+
+      return name != null ? name.equals(cockroach.name) : cockroach.name == null;
+    }
+
+    @Override
+    public int hashCode() {
+      return name != null ? name.hashCode() : 0;
     }
   }
 }

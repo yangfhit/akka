@@ -21,6 +21,8 @@ import java.util.Optional
 
 import scala.concurrent.duration.FiniteDuration
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -35,6 +37,19 @@ object ScalaTestMessages {
 
   final case class Event1(field1: String)
   final case class Event2(field1V2: String, field2: Int)
+
+  final case class Zoo(first: Animal)
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+  @JsonSubTypes(
+    Array(
+      new JsonSubTypes.Type(value = classOf[Lion], name = "lion"),
+      new JsonSubTypes.Type(value = classOf[Elephant], name = "elephant")))
+  sealed trait Animal
+  final case class Lion(name: String) extends Animal
+  final case class Elephant(name: String, age: Int) extends Animal
+  // not defined in JsonSubTypes
+  final case class Cockroach(name: String) extends Animal
+
 }
 
 class ScalaTestEventMigration extends JacksonMigration {
@@ -88,6 +103,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
   def checkSerialization(obj: AnyRef): Unit = {
     val serializer = serializerFor(obj)
     val blob = serializer.toBinary(obj)
+//    println(s"# ${obj.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
     val deserialized = serializer.fromBinary(blob, serializer.manifest(obj))
     deserialized should ===(obj)
   }
@@ -132,6 +148,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize message with time" in {
       val msg = new TimeCommand(LocalDateTime.now(), Duration.of(5, ChronoUnit.SECONDS))
       checkSerialization(msg)
+    }
+
+    "serialize with polymorphism" in {
+      checkSerialization(new Zoo(new Lion("Simba")))
+      checkSerialization(new Zoo(new Elephant("Elephant", 49)))
+      // didn't expect Cockroach to be allowed when not defined in JsonSubTypes
+      checkSerialization(new Cockroach("huh"))
     }
 
     "deserialize with migrations" in {
@@ -186,6 +209,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize message with time" in {
       val msg = TimeCommand(LocalDateTime.now(), 5.seconds)
       checkSerialization(msg)
+    }
+
+    "serialize with polymorphism" in {
+      checkSerialization(Zoo(Lion("Simba")))
+      checkSerialization(Zoo(Elephant("Elephant", 49)))
+      // didn't expect Cockroach to be allowed when not defined in JsonSubTypes
+      checkSerialization(Cockroach("huh"))
     }
 
     "deserialize with migrations" in {
