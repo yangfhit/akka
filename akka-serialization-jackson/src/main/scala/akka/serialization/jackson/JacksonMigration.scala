@@ -13,9 +13,9 @@ import akka.util.unused
  * be used by the `JacksonSerializer` for a changed class.
  *
  * It is used when deserializing data of older version than the
- * [[#currentVersion]]. You implement the transformation of the
- * JSON structure in the [[#transform]] method. If you have changed the
- * class name you should override [[#transformClassName]] and return
+ * [[JacksonMigration#currentVersion]]. You implement the transformation of the
+ * JSON structure in the [[JacksonMigration#transform]] method. If you have changed the
+ * class name you should override [[JacksonMigration#transformClassName]] and return
  * current class name.
  */
 abstract class JacksonMigration {

@@ -66,17 +66,11 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
   private final val BufferSize = 1024 * 4
   private val migrations: Map[String, JacksonMigration] = {
     import scala.collection.JavaConverters._
-    conf
-      .getConfig("migrations")
-      .root
-      .unwrapped
-      .asScala
-      .toMap
-      .map {
-        case (k, v) ⇒
-          val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
-          k -> transformer
-      }(collection.breakOut)
+    conf.getConfig("migrations").root.unwrapped.asScala.toMap.map {
+      case (k, v) ⇒
+        val transformer = system.dynamicAccess.createInstanceFor[JacksonMigration](v.toString, Nil).get
+        k -> transformer
+    }
   }
 
   private val compressLargerThan: Long = conf.getBytes("compress-larger-than")
