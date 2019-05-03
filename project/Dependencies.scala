@@ -18,7 +18,7 @@ object Dependencies {
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.15.1"
-  val jacksonVersion = "2.9.4"
+  val jacksonVersion = "2.9.8"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.8", "2.13.0-M5"),
