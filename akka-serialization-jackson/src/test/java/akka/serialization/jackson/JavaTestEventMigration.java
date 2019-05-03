@@ -2,13 +2,12 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.jackson;
+package akka.serialization.jackson;
 
 import com.fasterxml.jackson.databind.node.IntNode;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
-import static akka.jackson.JavaTestMessages.*;
 
 public class JavaTestEventMigration extends JacksonMigration {
 
@@ -19,7 +18,7 @@ public class JavaTestEventMigration extends JacksonMigration {
 
   @Override
   public String transformClassName(int fromVersion, String className) {
-    return Event2.class.getName();
+    return JavaTestMessages.Event2.class.getName();
   }
 
   @Override

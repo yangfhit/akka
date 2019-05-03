@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.jackson;
+package akka.serialization.jackson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

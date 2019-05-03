@@ -2,7 +2,7 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.jackson
+package akka.serialization.jackson
 
 import java.util.concurrent.TimeUnit
 

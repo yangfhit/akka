@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.jackson
+package akka.serialization.jackson
 
 import scala.util.Failure
 import scala.util.Success
@@ -29,7 +29,7 @@ import com.typesafe.config.Config
 
   /**
    * Creates Jackson `ObjectMapper` with sensible defaults and modules configured
-   * in `akka.jackson.jackson-modules`.
+   * in `akka.serialization.jackson.jackson-modules`.
    */
   def create(system: ExtendedActorSystem, jsonFactory: Option[JsonFactory]): ObjectMapper =
     create(
@@ -40,7 +40,7 @@ import com.typesafe.config.Config
 
   /**
    * Creates Jackson `ObjectMapper` with sensible defaults and modules configured
-   * in `akka.jackson.jackson-modules`.
+   * in `akka.serialization.jackson.jackson-modules`.
    */
   def create(
       config: Config,
@@ -54,7 +54,7 @@ import com.typesafe.config.Config
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
 
-    val configuredModules = config.getStringList("akka.jackson.jackson-modules").asScala
+    val configuredModules = config.getStringList("akka.serialization.jackson.jackson-modules").asScala
     val modules =
       if (configuredModules.contains("*"))
         ObjectMapper.findModules(dynamicAccess.classLoader).asScala
@@ -68,7 +68,7 @@ import com.typesafe.config.Config
                   e,
                   s"Could not load configured Jackson module [$fqcn], " +
                   "please verify classpath dependencies or amend the configuration " +
-                  "[akka.jackson-modules]. Continuing without this module."))
+                  "[akka.serialization.jackson-modules]. Continuing without this module."))
               None
           }
         }

@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.jackson
+package akka.serialization.jackson
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -50,7 +50,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 /**
  * INTERNAL API: Base class for Jackson serializers.
  *
- * Configuration in `akka.jackson` section.
+ * Configuration in `akka.serialization.jackson` section.
  * It will load Jackson modules defined in configuration `jackson-modules`.
  *
  * It will compress the payload if the the payload is larger than the configured
@@ -61,7 +61,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     with BaseSerializer {
 
   private val log = Logging.getLogger(system, getClass)
-  private val conf = system.settings.config.getConfig("akka.jackson")
+  private val conf = system.settings.config.getConfig("akka.serialization.jackson")
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4
   private val migrations: Map[String, JacksonMigration] = {

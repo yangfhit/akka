@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.jackson
+package akka.serialization.jackson
 
 import scala.concurrent.duration._
 import java.time.Duration
@@ -61,11 +61,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
       ActorSystem(
         "JacksonJsonSerializerSpec",
         ConfigFactory.parseString(s"""
-    akka.jackson.migrations {
-      "akka.jackson.JavaTestMessages$$Event1" = "akka.jackson.JavaTestEventMigration"
-      "akka.jackson.JavaTestMessages$$Event2" = "akka.jackson.JavaTestEventMigration"
-      "akka.jackson.ScalaTestMessages$$Event1" = "akka.jackson.ScalaTestEventMigration"
-      "akka.jackson.ScalaTestMessages$$Event2" = "akka.jackson.ScalaTestEventMigration"
+    akka.serialization.jackson.migrations {
+      "akka.serialization.jackson.JavaTestMessages$$Event1" = "akka.serialization.jackson.JavaTestEventMigration"
+      "akka.serialization.jackson.JavaTestMessages$$Event2" = "akka.serialization.jackson.JavaTestEventMigration"
+      "akka.serialization.jackson.ScalaTestMessages$$Event1" = "akka.serialization.jackson.ScalaTestEventMigration"
+      "akka.serialization.jackson.ScalaTestMessages$$Event2" = "akka.serialization.jackson.ScalaTestEventMigration"
     }
     akka.actor {
       allow-java-serialization = off
