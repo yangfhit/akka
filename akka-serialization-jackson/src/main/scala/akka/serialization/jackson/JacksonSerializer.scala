@@ -146,6 +146,15 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 
     val decompressBytes = if (compressed) decompress(bytes) else bytes
 
+    val result = migration match {
+      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
+        val jsonTree = objectMapper.readTree(decompressBytes)
+        val newJsonTree = transformer.transform(fromVersion, jsonTree)
+        objectMapper.treeToValue(newJsonTree, clazz)
+      case _ ⇒
+        objectMapper.readValue(decompressBytes, clazz)
+    }
+
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
       if (bytes.length == decompressBytes.length)
@@ -163,14 +172,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
           bytes.length)
     }
 
-    migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion ⇒
-        val jsonTree = objectMapper.readTree(decompressBytes)
-        val newJsonTree = transformer.transform(fromVersion, jsonTree)
-        objectMapper.treeToValue(newJsonTree, clazz)
-      case _ ⇒
-        objectMapper.readValue(decompressBytes, clazz)
-    }
+    result
   }
 
   private def parseManifest(manifest: String) = {
