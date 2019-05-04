@@ -7,7 +7,7 @@ package akka.serialization.jackson
 /**
  * Complete module with support for all custom serializers.
  */
-class AkkaJacksonModule extends JacksonModule with ActorRefModule {
+class AkkaJacksonModule extends JacksonModule with ActorRefModule with AddressModule {
   override def getModuleName = "AkkaJacksonModule"
 }
 

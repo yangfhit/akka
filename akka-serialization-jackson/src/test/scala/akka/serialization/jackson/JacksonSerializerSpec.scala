@@ -22,6 +22,7 @@ import java.util.Optional
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.ActorRef
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.serialization.Serialization
 import akka.testkit.TestActors
@@ -39,6 +40,7 @@ object ScalaTestMessages {
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration)
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand])
   final case class CommandWithActorRef(name: String, replyTo: ActorRef)
+  final case class CommandWithAddress(name: String, address: Address)
 
   final case class Event1(field1: String)
   final case class Event2(field1V2: String, field2: Int)
@@ -109,7 +111,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
       val serializer = serializerFor(obj)
       val blob = serializer.toBinary(obj)
-      //println(s"# ${obj.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
+      println(s"# ${obj.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
       val deserialized = serializer.fromBinary(blob, serializer.manifest(obj))
       deserialized should ===(obj)
     }
@@ -160,6 +162,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize with ActorRef" in {
       val echo = system.actorOf(TestActors.echoActorProps)
       checkSerialization(new CommandWithActorRef("echo", echo))
+    }
+
+    "serialize with Address" in {
+      val address = Address("akka", "sys", "localhost", 2552)
+      checkSerialization(new CommandWithAddress("echo", address))
     }
 
     "serialize with polymorphism" in {
@@ -226,6 +233,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize with ActorRef" in {
       val echo = system.actorOf(TestActors.echoActorProps)
       checkSerialization(CommandWithActorRef("echo", echo))
+    }
+
+    "serialize with Address" in {
+      val address = Address("akka", "sys", "localhost", 2552)
+      checkSerialization(CommandWithAddress("echo", address))
     }
 
     "serialize with polymorphism" in {

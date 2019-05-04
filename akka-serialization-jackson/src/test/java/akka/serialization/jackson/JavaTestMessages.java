@@ -5,6 +5,7 @@
 package akka.serialization.jackson;
 
 import akka.actor.ActorRef;
+import akka.actor.Address;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -217,6 +218,34 @@ public interface JavaTestMessages {
     public int hashCode() {
       int result = name != null ? name.hashCode() : 0;
       result = 31 * result + (replyTo != null ? replyTo.hashCode() : 0);
+      return result;
+    }
+  }
+
+  public class CommandWithAddress {
+    public final String name;
+    public final Address address;
+
+    public CommandWithAddress(String name, Address address) {
+      this.name = name;
+      this.address = address;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      CommandWithAddress that = (CommandWithAddress) o;
+
+      if (name != null ? !name.equals(that.name) : that.name != null) return false;
+      return address != null ? address.equals(that.address) : that.address == null;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name != null ? name.hashCode() : 0;
+      result = 31 * result + (address != null ? address.hashCode() : 0);
       return result;
     }
   }
