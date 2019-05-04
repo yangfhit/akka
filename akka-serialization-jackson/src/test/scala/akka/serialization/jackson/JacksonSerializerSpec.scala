@@ -230,6 +230,19 @@ abstract class JacksonSerializerSpec(serializerName: String)
       checkSerialization(msg)
     }
 
+    "serialize FiniteDuration as java.time.Duration" in {
+      Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
+        val scalaMsg = TimeCommand(LocalDateTime.now(), 5.seconds)
+        val scalaSerializer = serializerFor(scalaMsg)
+        val blob = scalaSerializer.toBinary(scalaMsg)
+        println(s"# ${scalaMsg.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
+        val javaMsg = new JavaTestMessages.TimeCommand(LocalDateTime.now(), Duration.ofSeconds(5))
+        val javaSerializer = serializerFor(javaMsg)
+        val deserialized = javaSerializer.fromBinary(blob, javaSerializer.manifest(javaMsg))
+        deserialized should ===(javaMsg)
+      }
+    }
+
     "serialize with ActorRef" in {
       val echo = system.actorOf(TestActors.echoActorProps)
       checkSerialization(CommandWithActorRef("echo", echo))
