@@ -4,6 +4,7 @@
 
 package akka.serialization.jackson;
 
+import akka.actor.ActorRef;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -188,6 +189,34 @@ public interface JavaTestMessages {
     public int hashCode() {
       int result = timestamp != null ? timestamp.hashCode() : 0;
       result = 31 * result + (duration != null ? duration.hashCode() : 0);
+      return result;
+    }
+  }
+
+  public class CommandWithActorRef {
+    public final String name;
+    public final ActorRef replyTo;
+
+    public CommandWithActorRef(String name, ActorRef replyTo) {
+      this.name = name;
+      this.replyTo = replyTo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      CommandWithActorRef that = (CommandWithActorRef) o;
+
+      if (name != null ? !name.equals(that.name) : that.name != null) return false;
+      return replyTo != null ? replyTo.equals(that.replyTo) : that.replyTo == null;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name != null ? name.hashCode() : 0;
+      result = 31 * result + (replyTo != null ? replyTo.hashCode() : 0);
       return result;
     }
   }

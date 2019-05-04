@@ -21,6 +21,10 @@ import java.util.Optional
 
 import scala.concurrent.duration.FiniteDuration
 
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
+import akka.serialization.Serialization
+import akka.testkit.TestActors
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.JsonNode
@@ -34,6 +38,7 @@ object ScalaTestMessages {
   final case class BooleanCommand(published: Boolean)
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration)
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand])
+  final case class CommandWithActorRef(name: String, replyTo: ActorRef)
 
   final case class Event1(field1: String)
   final case class Event2(field1V2: String, field2: Int)
@@ -101,11 +106,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
   }
 
   def checkSerialization(obj: AnyRef): Unit = {
-    val serializer = serializerFor(obj)
-    val blob = serializer.toBinary(obj)
-//    println(s"# ${obj.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
-    val deserialized = serializer.fromBinary(blob, serializer.manifest(obj))
-    deserialized should ===(obj)
+    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
+      val serializer = serializerFor(obj)
+      val blob = serializer.toBinary(obj)
+      //println(s"# ${obj.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
+      val deserialized = serializer.fromBinary(blob, serializer.manifest(obj))
+      deserialized should ===(obj)
+    }
   }
 
   def serializerFor(obj: AnyRef): JacksonSerializer =
@@ -148,6 +155,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize message with time" in {
       val msg = new TimeCommand(LocalDateTime.now(), Duration.of(5, ChronoUnit.SECONDS))
       checkSerialization(msg)
+    }
+
+    "serialize with ActorRef" in {
+      val echo = system.actorOf(TestActors.echoActorProps)
+      checkSerialization(new CommandWithActorRef("echo", echo))
     }
 
     "serialize with polymorphism" in {
@@ -209,6 +221,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize message with time" in {
       val msg = TimeCommand(LocalDateTime.now(), 5.seconds)
       checkSerialization(msg)
+    }
+
+    "serialize with ActorRef" in {
+      val echo = system.actorOf(TestActors.echoActorProps)
+      checkSerialization(CommandWithActorRef("echo", echo))
     }
 
     "serialize with polymorphism" in {
