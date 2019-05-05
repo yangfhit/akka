@@ -27,6 +27,10 @@ import com.typesafe.config.Config
  */
 @InternalApi private[akka] object JacksonObjectMapperProvider {
 
+  // FIXME add ActorSystemSetup for programatic initialization of the ObjectMapper
+
+  // FIXME ActorSystem Extension to be able to use same ObjectMapper outside of the serializers?
+
   /**
    * Creates Jackson `ObjectMapper` with sensible defaults and modules configured
    * in `akka.serialization.jackson.jackson-modules`.
@@ -82,6 +86,10 @@ import com.typesafe.config.Config
       else mapper.registerModule(module)
       log.foreach(_.debug("Registered Jackson module [{}]", module.getClass.getName))
     }
+
+    // FIXME look into more options
+    // http://static.javadoc.io/com.fasterxml.jackson.core/jackson-databind/2.9.1/com/fasterxml/jackson/databind/SerializationFeature.html
+    // e.g. how dates/times are formatted
 
     mapper
   }

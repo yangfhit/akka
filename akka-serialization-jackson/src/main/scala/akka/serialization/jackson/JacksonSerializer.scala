@@ -106,6 +106,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 @InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem)
     extends JacksonSerializer(system, JacksonObjectMapperProvider.create(system, Some(new CBORFactory)))
 
+// FIXME look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
+
 /**
  * INTERNAL API: Base class for Jackson serializers.
  *
@@ -119,6 +121,9 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     extends SerializerWithStringManifest
     with BaseSerializer {
   import JacksonSerializer.GadgetClassBlacklist
+
+  // FIXME it should be possible to implement ByteBufferSerializer as well, using Jackson's
+  //       ByteBufferBackedOutputStream/ByteBufferBackedInputStream
 
   private val log = Logging.withMarker(system, getClass)
   private val conf = system.settings.config.getConfig("akka.serialization.jackson")
@@ -156,6 +161,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
     val bytes = objectMapper.writeValueAsBytes(obj)
+    // FIXME investigate if compression should be used for the binary formats
     val result =
       if (bytes.length > compressLargerThan) compress(bytes)
       else bytes
@@ -339,6 +345,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
   def decompress(bytes: Array[Byte]): Array[Byte] = {
     val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
     val out = new ByteArrayOutputStream()
+    // FIXME pool of recycled buffers?
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {

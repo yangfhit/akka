@@ -22,6 +22,7 @@ public interface JavaTestMessages {
   public class SimpleCommand implements TestMessage {
     private final String name;
 
+    // FIXME document gotchas like this (or is there a better way?)
     // @JsonProperty needed due to single argument constructor, see
     // https://github.com/FasterXML/jackson-modules-java8/tree/master/parameter-names
     public SimpleCommand(@JsonProperty("name") String name) {
