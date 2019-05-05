@@ -17,7 +17,9 @@ import java.util.Optional;
 
 public interface JavaTestMessages {
 
-  public class SimpleCommand {
+  public interface TestMessage {}
+
+  public class SimpleCommand implements TestMessage {
     private final String name;
 
     // @JsonProperty needed due to single argument constructor, see
@@ -44,7 +46,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class SimpleCommand2 {
+  public class SimpleCommand2 implements TestMessage {
     public final String name;
     public final String name2;
 
@@ -73,7 +75,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class OptionalCommand {
+  public class OptionalCommand implements TestMessage {
     private final Optional<String> maybe;
 
     public OptionalCommand(@JsonProperty("maybe") Optional<String> maybe) {
@@ -100,7 +102,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class BooleanCommand {
+  public class BooleanCommand implements TestMessage {
     private final boolean published;
 
     public BooleanCommand(@JsonProperty("published") boolean published) {
@@ -127,7 +129,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class CollectionsCommand {
+  public class CollectionsCommand implements TestMessage {
     private final List<String> strings;
     // if this was List<Object> it would not automatically work,
     // which is good, otherwise arbitrary classes could be loaded
@@ -165,7 +167,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class TimeCommand {
+  public class TimeCommand implements TestMessage {
     public final LocalDateTime timestamp;
     public final Duration duration;
 
@@ -192,9 +194,14 @@ public interface JavaTestMessages {
       result = 31 * result + (duration != null ? duration.hashCode() : 0);
       return result;
     }
+
+    @Override
+    public String toString() {
+      return "TimeCommand{" + "timestamp=" + timestamp + ", duration=" + duration + '}';
+    }
   }
 
-  public class CommandWithActorRef {
+  public class CommandWithActorRef implements TestMessage {
     public final String name;
     public final ActorRef replyTo;
 
@@ -222,7 +229,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class CommandWithAddress {
+  public class CommandWithAddress implements TestMessage {
     public final String name;
     public final Address address;
 
@@ -250,7 +257,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class Event1 {
+  public class Event1 implements TestMessage {
 
     private final String field1;
 
@@ -278,7 +285,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class Event2 {
+  public class Event2 implements TestMessage {
     private final String field1V2; // renamed from field1
     private final int field2; // new mandatory field
 
@@ -314,7 +321,7 @@ public interface JavaTestMessages {
     }
   }
 
-  public class Zoo {
+  public class Zoo implements TestMessage {
     public final Animal first;
 
     public Zoo(@JsonProperty("first") Animal first) {
