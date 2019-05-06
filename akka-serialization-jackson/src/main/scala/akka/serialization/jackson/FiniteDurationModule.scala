@@ -39,7 +39,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.DurationSerializer
  */
 @InternalApi private[akka] class FiniteDurationSerializer
     extends StdScalarSerializer[FiniteDuration](classOf[FiniteDuration]) {
-  override def serialize(value: FiniteDuration, jgen: JsonGenerator, provider: SerializerProvider) {
+  override def serialize(value: FiniteDuration, jgen: JsonGenerator, provider: SerializerProvider): Unit = {
     DurationSerializer.INSTANCE.serialize(value.asJava, jgen, provider)
   }
 }

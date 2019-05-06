@@ -38,7 +38,7 @@ import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
 @InternalApi private[akka] class ActorRefSerializer
     extends StdScalarSerializer[ActorRef](classOf[ActorRef])
     with ActorSystemAccess {
-  override def serialize(value: ActorRef, jgen: JsonGenerator, provider: SerializerProvider) {
+  override def serialize(value: ActorRef, jgen: JsonGenerator, provider: SerializerProvider): Unit = {
     val serializedActorRef = value.path.toSerializationFormatWithAddress(currentSystem().provider.getDefaultAddress)
     jgen.writeString(serializedActorRef)
   }

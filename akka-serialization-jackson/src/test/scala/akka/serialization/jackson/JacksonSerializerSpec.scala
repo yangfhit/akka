@@ -107,7 +107,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   val serialization = SerializationExtension(system)
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     shutdown()
   }
 

@@ -78,7 +78,7 @@ import com.fasterxml.jackson.databind.ser.Serializers
 
   def version: Version = JacksonModule.version
 
-  def setupModule(context: SetupContext) {
+  def setupModule(context: SetupContext): Unit = {
     initializers.result().foreach(_.apply(context))
   }
 

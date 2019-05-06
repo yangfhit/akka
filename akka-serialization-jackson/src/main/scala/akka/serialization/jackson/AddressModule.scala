@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
  * INTERNAL API
  */
 @InternalApi private[akka] class AddressSerializer extends StdScalarSerializer[Address](classOf[Address]) {
-  override def serialize(value: Address, jgen: JsonGenerator, provider: SerializerProvider) {
+  override def serialize(value: Address, jgen: JsonGenerator, provider: SerializerProvider): Unit = {
     jgen.writeString(value.toString)
   }
 }
