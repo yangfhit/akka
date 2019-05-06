@@ -77,7 +77,7 @@ object Dependencies {
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonAfterburner = "com.fasterxml.jackson.module" % "jackson-module-afterburner" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
-    val jacksonSmile = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jacksonVersion % "optional;provided" // ApacheV2
+    val jacksonSmile = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jacksonVersion // ApacheV2
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"

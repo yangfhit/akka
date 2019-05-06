@@ -17,7 +17,9 @@ import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
 object JacksonSerializationBench {
-  final case class Small(name: String, num: Int)
+  trait TestMessage
+
+  final case class Small(name: String, num: Int) extends TestMessage
 
   final case class Medium(
       field1: String,
@@ -29,6 +31,7 @@ object JacksonSerializationBench {
       nested1: Small,
       nested2: Small,
       nested3: Small)
+      extends TestMessage
 
   final case class Large(
       nested1: Medium,
@@ -36,7 +39,9 @@ object JacksonSerializationBench {
       nested3: Medium,
       vector: Vector[Medium],
       map: Map[String, Medium])
+      extends TestMessage
 
+  // FIXME try with plain java classes (not case class)
 }
 
 @State(Scope.Benchmark)
@@ -74,11 +79,10 @@ class JacksonSerializationBench {
           loglevel = WARNING
           actor {
             serialization-bindings {
-              "java.lang.Object" = $serializerName
-              "java.io.Serializable" = $serializerName
+              "akka.serialization.jackson.JacksonSerializationBench$$TestMessage" = $serializerName
             }
           }
-          jackson {
+          serialization.jackson {
             #compress-larger-than = 100 b
           }
         }

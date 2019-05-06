@@ -106,7 +106,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 @InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem)
     extends JacksonSerializer(system, JacksonObjectMapperProvider.create(system, Some(new CBORFactory)))
 
-// FIXME look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
+// FIXME Look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
+//       Make dependencies optional/provided.
 
 /**
  * INTERNAL API: Base class for Jackson serializers.
