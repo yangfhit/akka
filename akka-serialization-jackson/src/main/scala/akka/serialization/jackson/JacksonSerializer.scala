@@ -62,7 +62,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
     }
 
     @tailrec private def isAllowedSpringClass(clazz: Class[_]): Boolean = {
-      if (clazz == null == clazz.equals(classOf[java.lang.Object]))
+      if (clazz == null || clazz.equals(classOf[java.lang.Object]))
         true
       else {
         val name = clazz.getSimpleName
