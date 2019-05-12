@@ -78,9 +78,66 @@ class ScalaTestEventMigration extends JacksonMigration {
   }
 }
 
-class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json")
 class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
 class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile")
+
+class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
+
+  def serializeToJsonString(obj: AnyRef, sys: ActorSystem = system): String = {
+    val blob = serializeToBinary(obj, sys)
+    new String(blob, "utf-8")
+  }
+
+  def deserializeFromJsonString(
+      json: String,
+      serializerId: Int,
+      manifest: String,
+      sys: ActorSystem = system): AnyRef = {
+    val blob = json.getBytes("utf-8")
+    deserializeFromBinary(blob, serializerId, manifest, sys)
+  }
+
+  "JacksonJsonSerializer with Java message classes" must {
+    import JavaTestMessages._
+
+    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
+    "by default serialize dates and durations as numeric timestamps" in {
+      val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
+      val json = serializeToJsonString(msg)
+      val expected = """{"timestamp":[2019,4,29,23,15,3,12345],"duration":5.000000000}"""
+      json should ===(expected)
+    }
+
+    // see SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
+    "be possible to serialize dates and durations as text with default date format " in {
+      withSystem("""
+        akka.serialization.jackson.serialization-features {
+          WRITE_DATES_AS_TIMESTAMPS = off
+        }
+        """) { sys =>
+        val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
+        val json = serializeToJsonString(msg, sys)
+        // Default format is defined in com.fasterxml.jackson.databind.util.StdDateFormat
+        // ISO-8601 yyyy-MM-dd'T'HH:mm:ss.SSSZ
+        // FIXME is this the same as rfc3339, or do we need something else to support interop with the format used by Play JSON?
+        // FIXME should we make this the default rather than numberic timestamps?
+        val expected = """{"timestamp":"2019-04-29T23:15:03.000012345","duration":"PT5S"}"""
+        json should ===(expected)
+
+        // and full round trip
+        checkSerialization(msg)
+      }
+    }
+
+    // FAIL_ON_UNKNOWN_PROPERTIES = off is default in reference.conf
+    "not fail on unknown properties" in {
+      val json = """{"name":"abc","name2":"def","name3":"ghi"}"""
+      val expected = new SimpleCommand2("abc", "def")
+      val serializer = serializerFor(expected)
+      deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
+    }
+  }
+}
 
 abstract class JacksonSerializerSpec(serializerName: String)
     extends TestKit(
@@ -105,24 +162,55 @@ abstract class JacksonSerializerSpec(serializerName: String)
     with Matchers
     with BeforeAndAfterAll {
 
-  val serialization = SerializationExtension(system)
+  def serialization(sys: ActorSystem = system): Serialization = SerializationExtension(sys)
 
   override def afterAll(): Unit = {
     shutdown()
   }
 
-  def checkSerialization(obj: AnyRef): Unit = {
-    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
-      val serializer = serializerFor(obj)
-      val blob = serializer.toBinary(obj)
-      //println(s"# ${obj.getClass.getName}: ${new String(blob, "utf-8")}") // FIXME
-      val deserialized = serializer.fromBinary(blob, serializer.manifest(obj))
-      deserialized should ===(obj)
+  def withSystem[T](config: String)(block: ActorSystem => T): T = {
+    val sys = ActorSystem(system.name, ConfigFactory.parseString(config).withFallback(system.settings.config))
+    try {
+      block(sys)
+    } finally shutdown(sys)
+  }
+
+  def withTransportInformation[T](sys: ActorSystem = system)(block: () => T): T = {
+    Serialization.withTransportInformation(sys.asInstanceOf[ExtendedActorSystem]) { () =>
+      block()
     }
   }
 
-  def serializerFor(obj: AnyRef): JacksonSerializer =
-    serialization.findSerializerFor(obj) match {
+  def checkSerialization(obj: AnyRef, sys: ActorSystem = system): Unit = {
+    val serializer = serializerFor(obj, sys)
+    val manifest = serializer.manifest(obj)
+    val serializerId = serializer.identifier
+    val blob = serializeToBinary(obj)
+    val deserialized = deserializeFromBinary(blob, serializerId, manifest, sys)
+    deserialized should ===(obj)
+  }
+
+  /**
+   * @return tuple of (blob, serializerId, manifest)
+   */
+  def serializeToBinary(obj: AnyRef, sys: ActorSystem = system): Array[Byte] = {
+    withTransportInformation(sys) { () =>
+      val serializer = serializerFor(obj, sys)
+      serializer.toBinary(obj)
+    }
+  }
+
+  def deserializeFromBinary(
+      blob: Array[Byte],
+      serializerId: Int,
+      manifest: String,
+      sys: ActorSystem = system): AnyRef = {
+    // TransportInformation added by serialization.deserialize
+    serialization(sys).deserialize(blob, serializerId, manifest).get
+  }
+
+  def serializerFor(obj: AnyRef, sys: ActorSystem = system): JacksonSerializer =
+    serialization(sys).findSerializerFor(obj) match {
       case serializer: JacksonSerializer ⇒ serializer
       case s ⇒
         throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
@@ -237,7 +325,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     "serialize FiniteDuration as java.time.Duration" in {
-      Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
+      withTransportInformation() { () =>
         val scalaMsg = TimeCommand(LocalDateTime.now(), 5.seconds)
         val scalaSerializer = serializerFor(scalaMsg)
         val blob = scalaSerializer.toBinary(scalaMsg)
@@ -296,7 +384,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     "not allow deserialization of blacklisted class" in {
-      Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
+      withTransportInformation() { () =>
         val msg = SimpleCommand("ok")
         val serializer = serializerFor(msg)
         val blob = serializer.toBinary(msg)
@@ -315,7 +403,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     "not allow deserialization of class that is not in serialization-bindings (whitelist)" in {
-      Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
+      withTransportInformation() { () =>
         val msg = SimpleCommand("ok")
         val serializer = serializerFor(msg)
         val blob = serializer.toBinary(msg)

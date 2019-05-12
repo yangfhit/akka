@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
 
@@ -54,9 +55,22 @@ import com.typesafe.config.Config
     import scala.collection.JavaConverters._
 
     val mapper = new ObjectMapper(jsonFactory.orNull)
-
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+
+    val serializationFeatures = features(config, "akka.serialization.jackson.serialization-features")
+    val deserializationFeatures = features(config, "akka.serialization.jackson.deserialization-features")
+
+    serializationFeatures.foreach {
+      case (enumName, value) =>
+        val feature = SerializationFeature.valueOf(enumName)
+        mapper.configure(feature, value)
+    }
+
+    deserializationFeatures.foreach {
+      case (enumName, value) =>
+        val feature = DeserializationFeature.valueOf(enumName)
+        mapper.configure(feature, value)
+    }
 
     val configuredModules = config.getStringList("akka.serialization.jackson.jackson-modules").asScala
     val modules =
@@ -87,10 +101,18 @@ import com.typesafe.config.Config
       log.foreach(_.debug("Registered Jackson module [{}]", module.getClass.getName))
     }
 
-    // FIXME look into more options
-    // http://static.javadoc.io/com.fasterxml.jackson.core/jackson-databind/2.9.1/com/fasterxml/jackson/databind/SerializationFeature.html
-    // e.g. how dates/times are formatted
-
     mapper
+  }
+
+  private def features(config: Config, section: String): Map[String, Boolean] = {
+    import scala.collection.JavaConverters._
+    val cfg = config.getConfig(section)
+    cfg.root
+      .keySet()
+      .asScala
+      .map { key =>
+        key -> cfg.getBoolean(key)
+      }
+      .toMap
   }
 }
