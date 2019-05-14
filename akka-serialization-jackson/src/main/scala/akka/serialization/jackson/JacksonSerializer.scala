@@ -82,13 +82,23 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
 
 }
 
+object JacksonJsonSerializer {
+  val Identifier = 31
+}
+
 /**
  * INTERNAL API: only public by configuration
  *
  * Akka serializer for Jackson with JSON.
  */
 @InternalApi private[akka] final class JacksonJsonSerializer(system: ExtendedActorSystem)
-    extends JacksonSerializer(system, JacksonObjectMapperProvider.create(system, None))
+    extends JacksonSerializer(
+      system,
+      JacksonObjectMapperProvider(system).getOrCreate(JacksonJsonSerializer.Identifier, None))
+
+object JacksonSmileSerializer {
+  val Identifier = 33
+}
 
 /**
  * INTERNAL API: only public by configuration
@@ -96,7 +106,13 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
  * Akka serializer for Jackson with Smile.
  */
 @InternalApi private[akka] final class JacksonSmileSerializer(system: ExtendedActorSystem)
-    extends JacksonSerializer(system, JacksonObjectMapperProvider.create(system, Some(new SmileFactory)))
+    extends JacksonSerializer(
+      system,
+      JacksonObjectMapperProvider(system).getOrCreate(JacksonSmileSerializer.Identifier, Some(new SmileFactory)))
+
+object JacksonCborSerializer {
+  val Identifier = 32
+}
 
 /**
  * INTERNAL API: only public by configuration
@@ -104,7 +120,9 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
  * Akka serializer for Jackson with CBOR.
  */
 @InternalApi private[akka] final class JacksonCborSerializer(system: ExtendedActorSystem)
-    extends JacksonSerializer(system, JacksonObjectMapperProvider.create(system, Some(new CBORFactory)))
+    extends JacksonSerializer(
+      system,
+      JacksonObjectMapperProvider(system).getOrCreate(JacksonCborSerializer.Identifier, Some(new CBORFactory)))
 
 // FIXME Look into if we should support both Smile and CBOR, and what we should recommend if there is a choice.
 //       Make dependencies optional/provided.
@@ -118,7 +136,9 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory
  * It will compress the payload if the the payload is larger than the configured
  * `compress-larger-than` value.
  */
-@InternalApi private[akka] abstract class JacksonSerializer(val system: ExtendedActorSystem, objectMapper: ObjectMapper)
+@InternalApi private[akka] abstract class JacksonSerializer(
+    val system: ExtendedActorSystem,
+    val objectMapper: ObjectMapper)
     extends SerializerWithStringManifest
     with BaseSerializer {
   import JacksonSerializer.GadgetClassBlacklist

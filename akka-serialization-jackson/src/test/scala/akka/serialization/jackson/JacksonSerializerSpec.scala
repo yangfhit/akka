@@ -8,27 +8,36 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.Arrays
+import java.util.Locale
 import java.util.Optional
 import java.util.logging.FileHandler
 
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.BootstrapSetup
 import akka.actor.ExtendedActorSystem
 import akka.actor.Status
+import akka.actor.setup.ActorSystemSetup
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.TestActors
 import akka.testkit.TestKit
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.Module
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
 import com.fasterxml.jackson.databind.node.IntNode
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
@@ -78,8 +87,23 @@ class ScalaTestEventMigration extends JacksonMigration {
   }
 }
 
-class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
-class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile")
+class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor") {
+  "JacksonCborSerializer" must {
+    "have right configured identifier" in {
+      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
+        JacksonCborSerializer.Identifier)
+    }
+  }
+}
+
+class JacksonSmileSerializerSpec extends JacksonSerializerSpec("jackson-smile") {
+  "JacksonSmileSerializer" must {
+    "have right configured identifier" in {
+      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
+        JacksonSmileSerializer.Identifier)
+    }
+  }
+}
 
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
@@ -95,6 +119,27 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       sys: ActorSystem = system): AnyRef = {
     val blob = json.getBytes("utf-8")
     deserializeFromBinary(blob, serializerId, manifest, sys)
+  }
+
+  "JacksonJsonSerializer" must {
+    "have right configured identifier" in {
+      serialization().serializerFor(classOf[JavaTestMessages.TestMessage]).identifier should ===(
+        JacksonJsonSerializer.Identifier)
+    }
+
+    "support lookup of same ObjectMapper via JacksonObjectMapperProvider" in {
+      val mapper = serialization()
+        .serializerFor(classOf[JavaTestMessages.TestMessage])
+        .asInstanceOf[JacksonSerializer]
+        .objectMapper
+      JacksonObjectMapperProvider(system)
+        .getOrCreate(JacksonJsonSerializer.Identifier, None) shouldBe theSameInstanceAs(mapper)
+
+      val anotherIdentifier = 999
+      val mapper2 = JacksonObjectMapperProvider(system).getOrCreate(anotherIdentifier, None)
+      mapper2 should not be theSameInstanceAs(mapper)
+      JacksonObjectMapperProvider(system).getOrCreate(anotherIdentifier, None) shouldBe theSameInstanceAs(mapper2)
+    }
   }
 
   "JacksonJsonSerializer with Java message classes" must {
@@ -136,6 +181,63 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       val serializer = serializerFor(expected)
       deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
     }
+
+    "be possible to create custom ObjectMapper" in {
+      pending
+    }
+  }
+
+  "JacksonJsonSerializer with Scala message classes" must {
+    import ScalaTestMessages._
+
+    "be possible to create custom ObjectMapper" in {
+      val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
+        override def newObjectMapper(serializerIdentifier: Int, jsonFactory: Option[JsonFactory]): ObjectMapper = {
+          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+            val mapper = new ObjectMapper(jsonFactory.orNull)
+            // some customer configuration of the mapper
+            mapper.setLocale(Locale.US)
+            mapper
+          } else
+            super.newObjectMapper(serializerIdentifier, jsonFactory)
+        }
+
+        override def overrideConfiguredSerializationFeatures(
+            serializerIdentifier: Int,
+            configuredFeatures: immutable.Seq[(SerializationFeature, Boolean)])
+            : immutable.Seq[(SerializationFeature, Boolean)] = {
+          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+            configuredFeatures :+ (SerializationFeature.INDENT_OUTPUT -> true)
+          } else
+            super.overrideConfiguredSerializationFeatures(serializerIdentifier, configuredFeatures)
+        }
+
+        override def overrideConfiguredModules(
+            serializerIdentifier: Int,
+            configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
+          if (serializerIdentifier == JacksonJsonSerializer.Identifier) {
+            configuredModules.filterNot(_.isInstanceOf[AfterburnerModule])
+          } else
+            super.overrideConfiguredModules(serializerIdentifier, configuredModules)
+      }
+
+      val config = system.settings.config
+
+      val setup = ActorSystemSetup()
+        .withSetup(JacksonObjectMapperProviderSetup(customJacksonObjectMapperFactory))
+        .withSetup(BootstrapSetup(config))
+      withSystem(setup) { sys =>
+        val msg = SimpleCommand2("a", "b")
+        val json = serializeToJsonString(msg, sys)
+        // using the custom ObjectMapper with pretty printing enabled
+        val expected =
+          """|{
+             |  "name" : "a",
+             |  "name2" : "b"
+             |}""".stripMargin
+        json should ===(expected)
+      }
+    }
   }
 }
 
@@ -170,6 +272,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
   def withSystem[T](config: String)(block: ActorSystem => T): T = {
     val sys = ActorSystem(system.name, ConfigFactory.parseString(config).withFallback(system.settings.config))
+    try {
+      block(sys)
+    } finally shutdown(sys)
+  }
+
+  def withSystem[T](setup: ActorSystemSetup)(block: ActorSystem => T): T = {
+    val sys = ActorSystem(system.name, setup)
     try {
       block(sys)
     } finally shutdown(sys)
@@ -434,6 +543,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
         }
       }
     }
+
+    // FIXME test configured modules with `*` and that the Akka modules are found
 
   }
 }
