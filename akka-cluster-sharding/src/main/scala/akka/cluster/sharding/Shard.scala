@@ -476,7 +476,7 @@ private[akka] class Shard(
       log.debug("Buffer is full, dropping message for entity [{}]", id)
       context.system.deadLetters ! msg
     } else {
-      log.debug("Message for entity [{}] buffered", id)
+      log.debug("Message for entity [{}] buffered: {}", id, msg)
       messageBuffers.append(id, msg, snd)
     }
   }
