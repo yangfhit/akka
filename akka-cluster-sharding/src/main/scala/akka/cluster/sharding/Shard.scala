@@ -436,7 +436,7 @@ private[akka] class Shard(
       log.debug(
         "Entity stopped after passivation [{}], but will be started again due to buffered messages.",
         event.entityId)
-      sendMsgBuffer(EntityStarted(event.entityId))
+      processChange(EntityStarted(event.entityId))(sendMsgBuffer)
     } else {
       log.debug("Entity stopped after passivation [{}]", event.entityId)
       messageBuffers.remove(event.entityId)
